@@ -1,0 +1,99 @@
+/**
+外部系统接入请求对象数据结构
+*/
+
+option java_package                 = "com.sand.accsys.protocol.protocolbuf";
+option java_outer_classname         = "IProtocol";
+
+
+
+message Request{
+    required Header             header      = 1;
+    optional RpcBody            rBody       = 2;
+    optional MessageBatchBody   mBody       = 3;
+    optional FileMetaBody       fBody       = 4;
+}
+
+message Response{
+    required Header             header      = 1;
+    optional RpcBody            rBody       = 2;
+    optional MessageBatchBody   mBody       = 3;
+    optional FileMetaBody       fBody       = 4;
+}
+
+message Header{
+    required string version     = 1[default = "1.0.0"];//协议版本号 x.y.z
+    optional Ctype ctype        = 2[default = TCP];//通信实现方式 0-tcp 1-mq
+    enum Ctype{
+        TCP = 0;
+        MQ  = 1;
+    }
+    optional string dtime       = 3;//调用时间戳 yyyyMMddHHmmss
+
+    optional Bimpl bimpl        = 4[default = RPC];//业务实现类型 01-远程过程调用 02-消息通知 03-文件传输通知
+
+    enum Bimpl{
+        RPC                    = 01;
+        MessageBatch          = 02;
+        FileMeta              = 03;
+    }
+    optional string cmark       = 5;//控制标示 11000000 第一位:1-长连接 第二位:1-心跳包 0-交易包
+    optional string blength     = 6;//协议体长度
+    optional string csum        = 7;//协议报文校验值
+}
+
+message RpcBody{
+    message Payhead{
+        optional string dispath     = 1;//调度信息(rpc 按产品号调度)
+        optional string tcode       = 2;//业务操作标示(Abacus.Freezing.batchUnfreezeMoney)
+        optional string invoker     = 3;//调用方标示
+        optional string respCode    = 4;//服务返回码
+        optional string respMsg     = 5;//服务返回描述
+    }
+    message Payload{
+        optional string data        = 1;//数据内容
+    }
+
+    required Payhead payhead        = 1;
+    required Payload payload        = 2;
+}
+
+message MessageBatchBody{
+    message Payhead{
+        optional string dispath     = 1;//调度信息(Message 按产品号调度)
+        optional string tcode       = 2;//业务操作标示(Abacus.Freezing.batchUnfreezeMoney)
+        optional string invoker     = 3;//调用方标示
+        optional string respCode    = 4;//回调信息
+        optional string respMsg     = 5;//回调描述
+    }
+
+    message Payload{
+        optional string mbatchNo    = 1;//消息批次号
+        optional string mhead       = 2;
+        repeated string messages    = 3;//消息数据集合
+    }
+    required Payhead payhead        = 1;
+    required Payload payload        = 2;
+}
+
+message FileMetaBody{
+    message Payhead{
+        optional string dispath     = 1;//调度信息(Stream 按产品号调度)
+        optional string tcode       = 2;//业务操作标示(Abacus.Freezing.batchUnfreezeMoney)
+        optional string invoker     = 3;//调用方标示
+        optional string respCode    = 4;//回调信息
+        optional string respMsg     = 5;//回调描述
+    }
+    message FileMeta{
+        optional string fileName    = 1;//操作文件名
+        optional string fileUnit    = 2;//操作文件ftp路径
+    }
+    message Payload{
+        optional string fbatchNo    = 1;//文件批次号
+        optional string fhead       = 2;
+        optional FileMeta fmeta     = 3;
+    }
+    required Payhead payhead        = 1;
+    required Payload payload        = 2;
+}
+
